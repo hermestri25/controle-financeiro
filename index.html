@@ -69,9 +69,15 @@
             display: none;
         }
         .logout-btn {
-            position: absolute;
+            position: fixed;
             top: 20px;
             right: 20px;
+        }
+        @media (max-width: 600px) {
+            .logout-btn {
+                position: static;
+                margin-bottom: 20px;
+            }
         }
     </style>
 </head>
@@ -271,32 +277,55 @@
             const { jsPDF } = window.jspdf;
             const doc = new jsPDF();
 
-            let y = 10;
-            doc.text("Receitas:", 10, y);
+            const username = document.getElementById('username').value;
+            const date = new Date().toLocaleDateString('pt-BR');
 
+            // Cabeçalho
+            doc.setFontSize(18);
+            doc.text("Relatório de Finanças", 10, 10);
+            doc.setFontSize(12);
+            doc.text(`Usuário: ${username}`, 10, 20);
+
+            // Receitas
+            doc.setFontSize(14);
+            doc.setTextColor(0, 128, 0); // Verde
+            doc.text("Receitas:", 10, 30);
+
+            let y = 40;
+            doc.setFontSize(12);
+            doc.setTextColor(0, 0, 0); // Preto
             document.querySelectorAll('#incomeTable tbody tr').forEach(row => {
                 const description = row.cells[0].querySelector('input').value || 'Sem descrição';
                 const value = row.cells[1].querySelector('input').value || 'R$ 0,00';
-                y += 10;
                 doc.text(`Descrição: ${description}, Valor: ${value}`, 10, y);
+                y += 10;
             });
 
-            y += 10;
-            doc.text("Despesas:", 10, y);
+            // Despesas
+            doc.setFontSize(14);
+            doc.setTextColor(255, 0, 0); // Vermelho
+            doc.text("Despesas:", 10, y + 10);
 
+            y += 20;
+            doc.setFontSize(12);
+            doc.setTextColor(0, 0, 0); // Preto
             document.querySelectorAll('#expenseTable tbody tr').forEach(row => {
                 const description = row.cells[0].querySelector('input').value || 'Sem descrição';
                 const value = row.cells[1].querySelector('input').value || 'R$ 0,00';
-                y += 10;
                 doc.text(`Descrição: ${description}, Valor: ${value}`, 10, y);
+                y += 10;
             });
 
-            y += 10;
-            doc.text(`Total de Receitas: ${document.getElementById('totalIncome').textContent}`, 10, y);
-            y += 10;
-            doc.text(`Total de Despesas: ${document.getElementById('totalExpenses').textContent}`, 10, y);
-            y += 10;
-            doc.text(`Saldo: ${document.getElementById('balance').textContent}`, 10, y);
+            // Resumo
+            doc.setFontSize(14);
+            doc.setTextColor(0, 0, 0); // Preto
+            doc.text(`Total de Receitas: ${document.getElementById('totalIncome').textContent}`, 10, y + 10);
+            doc.text(`Total de Despesas: ${document.getElementById('totalExpenses').textContent}`, 10, y + 20);
+            doc.text(`Saldo: ${document.getElementById('balance').textContent}`, 10, y + 30);
+
+            // Rodapé
+            doc.setFontSize(10);
+            doc.text(`Relatório emitido em: ${date}`, 10, doc.internal.pageSize.height - 10);
 
             doc.save('relatorio_financeiro.pdf');
         }
