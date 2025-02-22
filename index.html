@@ -27,7 +27,7 @@
         th {
             background-color: #f8f9fa;
         }
-        input[type="text"], input[type="password"] {
+        input[type="text"], input[type="password"], select {
             width: 100%;
             padding: 5px;
             box-sizing: border-box;
@@ -53,59 +53,19 @@
         .expense {
             color: red;
         }
-        .login-container, .register-container {
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            height: 100vh;
-        }
-        .login-form, .register-form {
-            background: white;
-            padding: 20px;
-            border-radius: 5px;
-            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
-        }
-        .hidden {
-            display: none;
+        .reserve {
+            color: blue;
         }
         .logout-btn {
-            position: fixed;
+            position: absolute;
             top: 20px;
             right: 20px;
-        }
-        @media (max-width: 600px) {
-            .logout-btn {
-                position: static;
-                margin-bottom: 20px;
-            }
         }
     </style>
 </head>
 <body>
-    <!-- Tela de Login -->
-    <div id="loginContainer" class="login-container">
-        <div class="login-form">
-            <h2>Login</h2>
-            <input type="text" id="username" placeholder="Usuário" required oninput="this.value = this.value.toUpperCase()">
-            <input type="password" id="password" placeholder="Senha" required>
-            <button class="btn" onclick="login()">Entrar</button>
-            <p>Não tem uma conta? <a href="#" onclick="showRegister()">Crie uma aqui</a>.</p>
-        </div>
-    </div>
-
-    <!-- Tela de Registro -->
-    <div id="registerContainer" class="register-container hidden">
-        <div class="register-form">
-            <h2>Registrar</h2>
-            <input type="text" id="newUsername" placeholder="Usuário" required oninput="this.value = this.value.toUpperCase()">
-            <input type="password" id="newPassword" placeholder="Senha" required>
-            <button class="btn" onclick="register()">Criar Conta</button>
-            <p>Já tem uma conta? <a href="#" onclick="showLogin()">Faça login aqui</a>.</p>
-        </div>
-    </div>
-
     <!-- Tela de Controle Financeiro -->
-    <div id="financeContainer" class="hidden">
+    <div id="financeContainer">
         <button class="btn logout-btn" onclick="logout()">Desconectar</button>
         <h1>Controle Financeiro Pessoal</h1>
 
@@ -114,6 +74,7 @@
             <thead>
                 <tr>
                     <th>Descrição</th>
+                    <th>Categoria</th>
                     <th>Valor</th>
                     <th>Ação</th>
                 </tr>
@@ -127,6 +88,7 @@
             <thead>
                 <tr>
                     <th>Descrição</th>
+                    <th>Categoria</th>
                     <th>Valor</th>
                     <th>Ação</th>
                 </tr>
@@ -135,9 +97,24 @@
         </table>
         <button class="btn" onclick="addExpenseRow()">Adicionar Despesa</button>
 
+        <h2>Reservas</h2>
+        <table id="reserveTable">
+            <thead>
+                <tr>
+                    <th>Descrição</th>
+                    <th>Categoria</th>
+                    <th>Valor</th>
+                    <th>Ação</th>
+                </tr>
+            </thead>
+            <tbody></tbody>
+        </table>
+        <button class="btn" onclick="addReserveRow()">Adicionar Reserva</button>
+
         <div class="summary">
             <p>Total de Receitas: <span id="totalIncome" class="income">R$ 0,00</span></p>
             <p>Total de Despesas: <span id="totalExpenses" class="expense">R$ 0,00</span></p>
+            <p>Total de Reservas: <span id="totalReserves" class="reserve">R$ 0,00</span></p>
             <p>Saldo: <span id="balance">R$ 0,00</span></p>
         </div>
 
@@ -146,68 +123,8 @@
 
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.4.0/jspdf.umd.min.js"></script>
     <script>
-        // Simulação de banco de dados de usuários no localStorage
-        if (!localStorage.getItem('users')) {
-            localStorage.setItem('users', JSON.stringify([]));
-        }
-
-        function getUsers() {
-            return JSON.parse(localStorage.getItem('users'));
-        }
-
-        function saveUsers(users) {
-            localStorage.setItem('users', JSON.stringify(users));
-        }
-
-        function showRegister() {
-            document.getElementById('loginContainer').classList.add('hidden');
-            document.getElementById('registerContainer').classList.remove('hidden');
-        }
-
-        function showLogin() {
-            document.getElementById('registerContainer').classList.add('hidden');
-            document.getElementById('loginContainer').classList.remove('hidden');
-        }
-
-        function register() {
-            const newUsername = document.getElementById('newUsername').value;
-            const newPassword = document.getElementById('newPassword').value;
-
-            if (newUsername && newPassword) {
-                const users = getUsers();
-                const userExists = users.some(user => user.username === newUsername);
-
-                if (userExists) {
-                    alert("Usuário já existe!");
-                } else {
-                    users.push({ username: newUsername, password: newPassword });
-                    saveUsers(users);
-                    alert("Conta criada com sucesso!");
-                    showLogin();
-                }
-            } else {
-                alert("Preencha todos os campos!");
-            }
-        }
-
-        function login() {
-            const username = document.getElementById('username').value;
-            const password = document.getElementById('password').value;
-
-            const users = getUsers();
-            const user = users.find(user => user.username === username && user.password === password);
-
-            if (user) {
-                document.getElementById('loginContainer').classList.add('hidden');
-                document.getElementById('financeContainer').classList.remove('hidden');
-            } else {
-                alert("Usuário ou senha incorretos!");
-            }
-        }
-
         function logout() {
             document.getElementById('financeContainer').classList.add('hidden');
-            document.getElementById('loginContainer').classList.remove('hidden');
         }
 
         function addIncomeRow() {
@@ -215,6 +132,13 @@
             const row = table.insertRow();
             row.innerHTML = `
                 <td><input type="text" placeholder="Descrição"></td>
+                <td>
+                    <select>
+                        <option value="principal">Principal</option>
+                        <option value="extras">Extras</option>
+                        <option value="outros">Outros</option>
+                    </select>
+                </td>
                 <td><input type="text" oninput="validateCurrency(this); updateSummary()" placeholder="R$ 0,00"></td>
                 <td><button class="btn" onclick="removeRow(this)">Remover</button></td>
             `;
@@ -225,6 +149,33 @@
             const row = table.insertRow();
             row.innerHTML = `
                 <td><input type="text" placeholder="Descrição"></td>
+                <td>
+                    <select>
+                        <option value="comida">Comida</option>
+                        <option value="aluguel">Aluguel</option>
+                        <option value="agua">Água</option>
+                        <option value="luz">Luz</option>
+                        <option value="internet">Internet</option>
+                        <option value="outros">Outros</option>
+                    </select>
+                </td>
+                <td><input type="text" oninput="validateCurrency(this); updateSummary()" placeholder="R$ 0,00"></td>
+                <td><button class="btn" onclick="removeRow(this)">Remover</button></td>
+            `;
+        }
+
+        function addReserveRow() {
+            const table = document.getElementById('reserveTable').getElementsByTagName('tbody')[0];
+            const row = table.insertRow();
+            row.innerHTML = `
+                <td><input type="text" placeholder="Descrição"></td>
+                <td>
+                    <select>
+                        <option value="reserva_rapida">Reserva Rápida</option>
+                        <option value="reserva_emergencia">Reserva de Emergência</option>
+                        <option value="outros">Outros Recursos</option>
+                    </select>
+                </td>
                 <td><input type="text" oninput="validateCurrency(this); updateSummary()" placeholder="R$ 0,00"></td>
                 <td><button class="btn" onclick="removeRow(this)">Remover</button></td>
             `;
@@ -255,6 +206,7 @@
         function updateSummary() {
             let totalIncome = 0;
             let totalExpenses = 0;
+            let totalReserves = 0;
 
             document.querySelectorAll('#incomeTable tbody input[type="text"]').forEach(input => {
                 if (input.placeholder === "R$ 0,00") {
@@ -268,66 +220,50 @@
                 }
             });
 
+            document.querySelectorAll('#reserveTable tbody input[type="text"]').forEach(input => {
+                if (input.placeholder === "R$ 0,00") {
+                    totalReserves += parseCurrency(input.value);
+                }
+            });
+
             document.getElementById('totalIncome').textContent = `R$ ${totalIncome.toFixed(2).replace('.', ',')}`;
             document.getElementById('totalExpenses').textContent = `R$ ${totalExpenses.toFixed(2).replace('.', ',')}`;
-            document.getElementById('balance').textContent = `R$ ${(totalIncome - totalExpenses).toFixed(2).replace('.', ',')}`;
+            document.getElementById('totalReserves').textContent = `R$ ${totalReserves.toFixed(2).replace('.', ',')}`;
+            document.getElementById('balance').textContent = `R$ ${(totalIncome - totalExpenses - totalReserves).toFixed(2).replace('.', ',')}`;
         }
 
         async function downloadReport() {
             const { jsPDF } = window.jspdf;
             const doc = new jsPDF();
 
-            const username = document.getElementById('username').value;
-            const date = new Date().toLocaleDateString('pt-BR');
+            let y = 10;
+            doc.text("Receitas:", 10, y);
 
-            // Cabeçalho
-            doc.setFontSize(18);
-            doc.text("Relatório de Finanças", 10, 10);
-            doc.setFontSize(12);
-            doc.text(`Usuário: ${username}`, 10, 20);
-
-            // Receitas
-            doc.setFontSize(14);
-            doc.setTextColor(0, 128, 0); // Verde
-            doc.text("Receitas:", 10, 30);
-
-            let y = 40;
-            doc.setFontSize(12);
-            doc.setTextColor(0, 0, 0); // Preto
             document.querySelectorAll('#incomeTable tbody tr').forEach(row => {
-                const description = row.cells[0].querySelector('input').value || 'Sem descrição';
-                const value = row.cells[1].querySelector('input').value || 'R$ 0,00';
-                doc.text(`Descrição: ${description}, Valor: ${value}`, 10, y);
-                y += 10;
+                const description = row.cells[0].querySelector('input').value;
+                const value = row.cells[2].querySelector('input').value;
+                doc.text(`${description}: ${value}`, 10, y += 10);
             });
 
-            // Despesas
-            doc.setFontSize(14);
-            doc.setTextColor(255, 0, 0); // Vermelho
-            doc.text("Despesas:", 10, y + 10);
+            y += 10;
+            doc.text("Despesas:", 10, y);
 
-            y += 20;
-            doc.setFontSize(12);
-            doc.setTextColor(0, 0, 0); // Preto
             document.querySelectorAll('#expenseTable tbody tr').forEach(row => {
-                const description = row.cells[0].querySelector('input').value || 'Sem descrição';
-                const value = row.cells[1].querySelector('input').value || 'R$ 0,00';
-                doc.text(`Descrição: ${description}, Valor: ${value}`, 10, y);
-                y += 10;
+                const description = row.cells[0].querySelector('input').value;
+                const value = row.cells[2].querySelector('input').value;
+                doc.text(`${description}: ${value}`, 10, y += 10);
             });
 
-            // Resumo
-            doc.setFontSize(14);
-            doc.setTextColor(0, 0, 0); // Preto
-            doc.text(`Total de Receitas: ${document.getElementById('totalIncome').textContent}`, 10, y + 10);
-            doc.text(`Total de Despesas: ${document.getElementById('totalExpenses').textContent}`, 10, y + 20);
-            doc.text(`Saldo: ${document.getElementById('balance').textContent}`, 10, y + 30);
+            y += 10;
+            doc.text("Reservas:", 10, y);
 
-            // Rodapé
-            doc.setFontSize(10);
-            doc.text(`Relatório emitido em: ${date}`, 10, doc.internal.pageSize.height - 10);
+            document.querySelectorAll('#reserveTable tbody tr').forEach(row => {
+                const description = row.cells[0].querySelector('input').value;
+                const value = row.cells[2].querySelector('input').value;
+                doc.text(`${description}: ${value}`, 10, y += 10);
+            });
 
-            doc.save('relatorio_financeiro.pdf');
+            doc.save("relatorio_financeiro.pdf");
         }
     </script>
 </body>
